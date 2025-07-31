@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard PCP</title>
+    <link rel="stylesheet" href="styles_v2.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="logo.png" alt="Logo da Empresa" class="logo-img">
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" id="nav-dashboard">
+                        <a href="#" class="nav-link"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+                    </li>
+                    <li class="nav-item" id="nav-produtos">
+                        <a href="#" class="nav-link"><i class="fas fa-box"></i><span>Produtos</span></a>
+                    </li>
+                    <li class="nav-item" id="nav-chegadas">
+                        <a href="#" class="nav-link"><i class="fas fa-truck"></i><span>Chegadas</span></a>
+                    </li>
+                    <li class="nav-item" id="nav-grupo-produto">
+                        <a href="#" class="nav-link"><i class="fas fa-layer-group"></i><span>Grupo Produto</span></a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="upload-section">
+                    <h4><i class="fas fa-upload"></i> Carregar Dados</h4>
+                    <input type="file" id="file-upload" accept=".json" style="display: none;">
+                    <button id="upload-btn" class="upload-btn">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Selecionar JSON
+                    </button>
+                    <div id="upload-status" class="upload-status">Nenhum arquivo.</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="view-dashboard" class="view active">
+                <header class="main-header">
+                    <div class="header-left">
+                        <h1>Dashboard PCP</h1>
+                        <p class="subtitle">Visão geral dos produtos e previsões de chegada</p>
+                    </div>
+                    <div class="header-right">
+                        <div class="date-info"><i class="fas fa-calendar-alt"></i><span id="current-date"></span></div>
+                        <div class="user-info"><i class="fas fa-user-circle"></i><span>Administrador</span></div>
+                    </div>
+                </header>
+                <section class="filters-section">
+                    <div class="filters-container">
+                        <div class="filter-group"><label for="filtro-produto">Buscar Produto</label><input type="text" id="filtro-produto" placeholder="Digite o código ou nome"></div>
+                        <div class="filter-group"><label for="filtro-grupo">Grupo de Produto</label><select id="filtro-grupo"><option value="">Todos</option></select></div>
+                        <div class="filter-group"><label for="filtro-mes">Mês</label><select id="filtro-mes"><option value="">Todos</option></select></div>
+                        <div class="filter-group"><label for="filtro-ano">Ano</label><select id="filtro-ano"><option value="">Todos</option></select></div>
+                        <div class="filter-group"><label for="filtro-estoque">Status do Estoque</label><select id="filtro-estoque"><option value="">Todos</option><option value="com-estoque">Com Estoque</option><option value="sem-estoque">Sem Estoque</option><option value="baixo-estoque">Estoque Baixo (&lt; 20)</option></select></div>
+                        <div class="filter-actions"><button id="btn-aplicar-filtros" class="btn-primary">Aplicar</button><button id="btn-limpar-filtros" class="btn-secondary">Limpar</button></div>
+                    </div>
+                </section>
+                <section class="stats-section">
+                    <div class="stats-grid">
+                        <div class="stat-card primary"><div class="stat-icon"><i class="fas fa-boxes"></i></div><div class="stat-content"><h3 id="total-produtos">0</h3><p>Total de Produtos</p></div></div>
+                        <div class="stat-card success"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-content"><h3 id="produtos-com-estoque">0</h3><p>Produtos com Estoque</p></div></div>
+                        <div class="stat-card warning"><div class="stat-icon"><i class="fas fa-warehouse"></i></div><div class="stat-content"><h3 id="total-estoque">0</h3><p>Total em Estoque</p></div></div>
+                        <div class="stat-card info"><div class="stat-icon"><i class="fas fa-truck-loading"></i></div><div class="stat-content"><h3 id="chegadas-proximas">0</h3><p>Chegadas (60d)</p></div></div>
+                    </div>
+                </section>
+                <section class="charts-section">
+                    <div class="charts-grid">
+                        <div class="chart-card"><div class="chart-header"><h3><i class="fas fa-chart-pie"></i>Distribuição de Estoque</h3><div class="chart-actions"><button class="btn-icon"><i class="fas fa-download"></i></button><button class="btn-icon"><i class="fas fa-cog"></i></button></div></div><div class="chart-content"><canvas id="estoqueChart"></canvas></div></div>
+                        <div class="chart-card"><div class="chart-header"><h3><i class="fas fa-chart-bar"></i>Chegadas Futuras por Período</h3><div class="chart-actions"><button class="btn-icon"><i class="fas fa-download"></i></button><button class="btn-icon"><i class="fas fa-cog"></i></button></div></div><div class="chart-content"><canvas id="chegadasChart"></canvas></div></div>
+                    </div>
+                </section>
+            </div>
+            <div id="view-produtos" class="view">
+                 <header class="main-header"><h1>Visão de Produtos</h1><p class="subtitle">Lista de produtos com estoque ou com previsão de chegada.</p></header>
+                 <div class="table-card"><div class="table-header"><h3>Lista de Produtos</h3></div><div class="table-wrapper"><table id="produtos-view-table"><thead><tr><th>Código</th><th>Produto</th><th>Estoque Atual</th><th>Próxima Chegada</th><th>Qtde.</th></tr></thead><tbody id="produtos-view-tbody"></tbody></table></div></div>
+            </div>
+            <div id="view-chegadas" class="view">
+                <header class="main-header"><h1>Visão de Chegadas</h1><p class="subtitle">Gráficos individuais para cada produto com previsão de chegada.</p></header>
+                <div id="chegadas-individuais-section"></div>
+            </div>
+            <div id="view-grupo-produto" class="view">
+                <header class="main-header"><h1>Visão por Grupo de Produto</h1><p class="subtitle">Produtos agrupados pela sua categoria.</p></header>
+                <div class="table-card"><div class="table-header"><h3>Lista de Produtos por Grupo</h3></div><div class="table-wrapper"><table id="grupo-produto-view-table"><thead><tr><th>Grupo</th><th>Código</th><th>Produto</th><th>Estoque</th><th>Próxima Chegada</th><th>Qtde.</th></tr></thead><tbody id="grupo-produto-view-tbody"></tbody></table></div></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay"><i class="fas fa-spinner fa-spin loading-spinner"></i></div>
+    <script src="script_v2.js"></script>
+</body>
+</html>
