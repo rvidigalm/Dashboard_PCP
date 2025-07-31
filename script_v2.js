@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dadosOriginais = productsData.map(p => ({
             codigo: String(p["Cód. Produto"] || ""),
             nome: String(p["Produto"] || ""),
-            // Prepara para a futura coluna "Grupo de Produto"
-            grupo: String(p["Grupo de Produto"] || "Não categorizado"), 
+            // CORREÇÃO FINAL E DEFINITIVA AQUI: Procurando por "Grupo Produtos" (plural)
+            grupo: String(p["Grupo Produtos"] || "Não categorizado"), 
             estoque: parseFloat(p["Estoque"]) || 0,
             chegadas: datasChegadaKeys.map(key => parseFloat(p[key]) || 0)
         }));
@@ -108,7 +108,9 @@ document.addEventListener("DOMContentLoaded", () => {
         views.forEach(v => v.classList.remove('active'));
         getEl(viewId).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        getEl(`nav-${viewId.split('-')[1]}`).classList.add('active');
+        const navId = `nav-${viewId.replace('view-', '')}`;
+        const navItem = getEl(navId);
+        if (navItem) navItem.classList.add('active');
     }
 
     function atualizarEstatisticas() {
@@ -117,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
         animarNumero(totalEstoqueEl, dadosOriginais.reduce((sum, p) => sum + p.estoque, 0));
         
         const chegadasFuturas = dadosProcessados.filter(d => {
+            if (!d.dataChegada) return false;
             const [dia, mes, ano] = d.dataChegada.split("/").map(Number);
             return new Date(ano, mes - 1, dia) >= new Date();
         });
@@ -143,9 +146,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function criarGraficoChegadas() {
         if (chegadasChart) chegadasChart.destroy();
         
-        // --- LÓGICA CORRIGIDA PARA MOSTRAR MESES FUTUROS ---
         const chegadasPorPeriodo = {};
         dadosProcessados.forEach(d => {
+            if (!d.dataChegada) return;
             const [dia, mes, ano] = d.dataChegada.split("/").map(Number);
             if (new Date(ano, mes - 1, dia) >= new Date()) {
                 const chave = `${String(mes).padStart(2, '0')}/${ano}`;
@@ -157,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const dataFutura = [];
         let dataAtual = new Date();
 
-        for (let i = 0; i < 12; i++) { // Gera os próximos 12 meses
+        for (let i = 0; i < 12; i++) {
             const mes = dataAtual.getMonth() + 1;
             const ano = dataAtual.getFullYear();
             const chave = `${String(mes).padStart(2, '0')}/${ano}`;
@@ -201,7 +204,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderizarTabelaGrupoProduto() {
         const tbody = getEl('grupo-produto-view-tbody');
         tbody.innerHTML = '';
-        dadosOriginais.forEach(p => {
+        // Ordena por grupo para melhor visualização
+        dadosOriginais.sort((a, b) => a.grupo.localeCompare(b.grupo)).forEach(p => {
             const proxChegada = dadosProcessados.find(d => d.codigo === p.codigo);
             const row = `<tr>
                 <td>${p.grupo}</td><td>${p.codigo}</td><td>${p.nome}</td><td>${p.estoque}</td>
@@ -237,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
             new Chart(getEl(canvasId), {
                 type: 'bar',
                 data: {
-                    labels: chegadasProduto.map(c => c.dataChegada.substring(0,5)),
+                    labels: chegadasProduto.map(c => c.dataChegada ? c.dataChegada.substring(0,5) : ''),
                     datasets: [{ 
                         label: 'Qtde', 
                         data: chegadasProduto.map(c => c.quantidade), 
@@ -252,13 +256,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function popularFiltroGrupo() {
-        const grupos = [...new Set(dadosOriginais.map(p => p.grupo))];
+        const grupos = [...new Set(dadosOriginais.map(p => p.grupo))].sort();
         filtroGrupoEl.innerHTML = '<option value="">Todos</option>';
         grupos.forEach(g => {
-            const option = document.createElement('option');
-            option.value = g;
-            option.textContent = g;
-            filtroGrupoEl.appendChild(option);
+            if(g && g !== "Não categorizado") {
+                const option = document.createElement('option');
+                option.value = g;
+                option.textContent = g;
+                filtroGrupoEl.appendChild(option);
+            }
         });
     }
 
